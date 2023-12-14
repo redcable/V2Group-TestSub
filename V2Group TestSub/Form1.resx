@@ -143,15 +143,6 @@
         UhyKvweFAAAAAElFTkSuQmCC
 </value>
   </data>
-  <data name="AddBtn.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
-    <value>
-        iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAA
-        3QAAAN0BcFOiBwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAACKSURBVFhH7ZdB
-        CoAwDAR76qt66JP8pO+KWWnBwyJRijm4gYESQjJQJbSY2Ss8qrMPKquJQJMRPJqDA2isJgJNRvDoF4HO
-        aiLQZAQJSEACEpDAMgEPbDUsFjR8wuZMAZxZzR2YidnnOp2Nvgaz8wVyr4B9GBFGkymg31ACEpCABP4p
-        kP44XfA8t3IAwly83CE48WQAAAAASUVORK5CYII=
-</value>
-  </data>
   <data name="MoveDownBtn.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
     <value>
         iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABGdBTUEAALGPC/xhBQAAAAlwSFlzAAAA
