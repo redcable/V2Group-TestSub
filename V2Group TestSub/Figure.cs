@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Drawing;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -10,14 +11,19 @@ namespace V2Group_TestSub
 {
     internal class Figure
     {
+        // Place to store all figure corners
         private List<Point> points = new List<Point>();
 
+       
+
+        // Event called when figure changed somehow
         public delegate void CahngesHandler();
         public event CahngesHandler FigureChanged;
 
+        // class to store coordinates
         public class Point
         {
-            public Point(double x, double y)
+            public Point(int x, int y)
             {
                 this.x = x;
                 this.y = y;
@@ -25,14 +31,83 @@ namespace V2Group_TestSub
 
             public Point()
             {
-                this.x = 0d;
-                this.y = 0d;
+                x = 0;
+                y = 0;
             }
 
-            public double x { get; set; }
-            public double y { get; set; }
+            public int x { get; set; }
+            public int y { get; set; }
+
+            public System.Drawing.Point Convert()
+            {
+                return new System.Drawing.Point(x, y);
+            }
         }
 
+
+        // Everything in there just for this method
+        // Checks if inputed point is in figure or not
+        public bool PointInFigureCheck(Point chPnt)
+        {
+            //Check if figure have at least 3 points
+            if (points.Count < 3)
+            {
+                return false;
+            }
+
+            double radSum = 0;
+
+            Point vectorA;
+            Point vectorB;
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                // Convert segmens into vectors
+                if (i == 0)
+                {
+                    vectorA = new Point(points[points.Count - 1].x - chPnt.x, points[points.Count - 1].y - chPnt.y);
+                    vectorB = new Point(points[i].x - chPnt.x, points[i].y - chPnt.y);
+                }
+                else
+                {
+                    vectorA = new Point(points[i - 1].x - chPnt.x, points[i - 1].y - chPnt.y);
+                    vectorB = new Point(points[i].x - chPnt.x, points[i].y - chPnt.y);
+                }
+
+
+                //             |   v0p * v1p   |       |    |vectorA||
+                // angle = acos|---------------| * sign| det|       ||
+                //             |absv0p * absv1p|       |    |vectorB||
+
+                double sqrt1 = Math.Sqrt(vectorA.x * vectorA.x + vectorA.y * vectorA.y);
+                double sqrt2 = Math.Sqrt(vectorB.x * vectorB.x + vectorB.y * vectorB.y);
+
+                int sign = Math.Sign((vectorA.x * vectorB.y) - (vectorA.y * vectorB.x));
+
+                double nominator = vectorA.x * vectorB.x + vectorA.y * vectorB.y;
+                double denominator = sqrt1 * sqrt2;
+
+                double angle = Math.Acos(nominator / denominator) * sign;
+
+                radSum += angle ;
+            }
+
+            radSum /= (Math.PI * 2);
+
+            int result = (int)(radSum * 1000);
+
+            if (result == 0)
+            {
+                return false;
+            }
+            else
+            {
+                return true;
+            }
+        }
+
+
+        // Typical input methods 
         public void AddPoint(Point point) 
         {
             points.Add(point);
@@ -40,7 +115,7 @@ namespace V2Group_TestSub
             FigureChanged?.Invoke();
         }
 
-        public void AddPoint(double x, double y) 
+        public void AddPoint(int x, int y) 
         {
             points.Add(new Point(x, y));
 
@@ -57,7 +132,7 @@ namespace V2Group_TestSub
             FigureChanged?.Invoke();
         }
 
-        public void InsertPoint(int id, double x, double y) 
+        public void InsertPoint(int id, int x, int y) 
         {
             if (ValidateID(id += 1))
             {
@@ -94,7 +169,7 @@ namespace V2Group_TestSub
             FigureChanged?.Invoke();
         }
 
-        public void UpdatePoint(int id, double x, double y) 
+        public void UpdatePoint(int id, int x, int y) 
         {
             if (ValidateID(id))
             {
@@ -133,6 +208,13 @@ namespace V2Group_TestSub
             FigureChanged?.Invoke();
         }
 
+
+        // Typhical output methods
+        public int GetCount()
+        {
+            return points.Count;
+        }
+
         public Point GetPoint(int id) 
         { 
 
@@ -149,7 +231,25 @@ namespace V2Group_TestSub
             return points;
         }
 
+        //Converts points list into array of Drawing.Point 
+        public System.Drawing.Point[] GetDrawingPoints()
+        {
+            // Looks like a mess, but better this than redo the entire class 
+            // using Drawing.Point class instead
+            // (I tried)
 
+            System.Drawing.Point[] output = new System.Drawing.Point[points.Count];
+
+            for (int i = 0; i < points.Count; i++)
+            {
+                output[i] = points[i].Convert();
+            }
+
+            return output;
+        }
+
+
+        // Check id input 
         protected bool ValidateID (int id)
         {
             if (id >= 0 && id < points.Count)
@@ -160,82 +260,8 @@ namespace V2Group_TestSub
             return false;
         }
 
-
-        //TODO do somthing with points count
-        public bool PointInFigureCheck(Point beamStart)
-        {
-            //Check if figure have at least 3 points
-            if (points.Count < 3)
-            {
-                return false;
-            }
-
-            //Windings counter
-            int counter = 0;
-
-            //Start and end points of figure edge
-            Point edgeStart;
-            Point edgeEnd;
-
-            //End pooint of beam
-            Point beamEnd = new Point(beamStart.x + 1, beamStart.y);
-
-            //Сycle through all edges of the figure
-            for (int i = 0; i < points.Count; i++)
-            {
-                //Getting start coordiantes of figure edge
-                edgeStart = points[i];
-
-                //Getting end coordiantes of figure edge
-                if (i == points.Count - 1)
-                {
-                    edgeEnd = points[0];
-                }
-                else
-                {
-                    edgeEnd = points[i + 1];
-                }
-
-                //Check if all points of edge are higher or lower than beam 
-                if ( !(edgeStart.y > beamStart.y && edgeEnd.y > beamStart.y) && 
-                     !(edgeStart.y < beamStart.y && edgeEnd.y < beamStart.y))
-                {
-
-                    //intermediate calculations
-                    double v = beamEnd.x - beamStart.x;
-                    double w = beamEnd.y - beamStart.y;
-
-                    double a = edgeEnd.y - edgeStart.y;
-                    double b = edgeStart.x - edgeEnd.x;
-                    double c = -edgeStart.x * edgeEnd.y + edgeStart.y * edgeEnd.x;
-
-                    double t = (-a * beamStart.x - b * beamStart.y - c) / (a * v + b * w);
-
-                    //Edge is crossed when t >= 0
-                    if (t >= 0)
-                    { 
-                        if (edgeStart.y >= beamStart.y)
-                        {
-                            counter++;
-                        }
-                        else
-                        {
-                            counter--;
-                        }
-                    }
-                }
-            }  
-            
-            if (counter == 0)
-            {
-                return false;
-            }
-            else
-            {
-                return true;
-            }
-        }
-
+        
+        // Json serializing
         public string SerializeToJson()
         {
             string output = JsonSerializer.Serialize(points);
@@ -252,14 +278,16 @@ namespace V2Group_TestSub
         }
 
 
+        // Presets
         public void LoadSquerePreset()
         {
-            List<Point> buf = new List<Point>();
-
-            buf.Add(new Point(1, 1));
-            buf.Add(new Point(1, 2));
-            buf.Add(new Point(2, 2));
-            buf.Add(new Point(2, 1));
+            List<Point> buf = new List<Point>
+            {
+                new Point(100, 100),
+                new Point(100, 200),
+                new Point(200, 200),
+                new Point(200, 100)
+            };
 
             points = buf;
 
@@ -268,11 +296,12 @@ namespace V2Group_TestSub
 
         public void LoadTringlePreset()
         {
-            List<Point> buf = new List<Point>();
-
-            buf.Add(new Point(1, 1));
-            buf.Add(new Point(2, 2));
-            buf.Add(new Point(3, 1));
+            List<Point> buf = new List<Point>
+            {
+                new Point(1, 1),
+                new Point(2, 2),
+                new Point(3, 1)
+            };
 
             points = buf;
 
@@ -281,16 +310,18 @@ namespace V2Group_TestSub
 
         public void LoadHourglassPreset()
         {
-            List<Point> buf = new List<Point>();
-
-            buf.Add(new Point(1, 1));
-            buf.Add(new Point(2, 1));
-            buf.Add(new Point(1, 2));
-            buf.Add(new Point(2, 2));
+            List<Point> buf = new List<Point>
+            {
+                new Point(1, 1),
+                new Point(2, 1),
+                new Point(1, 2),
+                new Point(2, 2)
+            };
 
             points = buf;
 
             FigureChanged?.Invoke();
         }
+
     }
 }
