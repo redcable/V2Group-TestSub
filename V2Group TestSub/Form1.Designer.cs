@@ -84,6 +84,7 @@
             this.x.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.x.HeaderText = "X ";
             this.x.Name = "x";
+            this.x.ReadOnly = true;
             this.x.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             // 
             // y
@@ -91,6 +92,7 @@
             this.y.AutoSizeMode = System.Windows.Forms.DataGridViewAutoSizeColumnMode.Fill;
             this.y.HeaderText = "Y";
             this.y.Name = "y";
+            this.y.ReadOnly = true;
             this.y.Resizable = System.Windows.Forms.DataGridViewTriState.False;
             // 
             // XcordTxtBox
@@ -128,7 +130,7 @@
             this.DeleteBtn.Size = new System.Drawing.Size(32, 32);
             this.DeleteBtn.TabIndex = 7;
             this.DeleteBtn.UseVisualStyleBackColor = true;
-            this.DeleteBtn.Click += new System.EventHandler(this.RemRowBtn_Click);
+            this.DeleteBtn.Click += new System.EventHandler(this.RemNodeBtn_Click);
             // 
             // MoveDownBtn
             // 
@@ -322,6 +324,7 @@
             this.MainMenuStrip = this.menuStrip1;
             this.Name = "MainForm";
             this.Text = "Точка в многоугольнке";
+            this.SizeChanged += new System.EventHandler(this.MainForm_SizeChanged);
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.KeyPressHandler);
             ((System.ComponentModel.ISupportInitialize)(this.PointsGridView)).EndInit();
             this.menuStrip1.ResumeLayout(false);

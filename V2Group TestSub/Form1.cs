@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Drawing;
 using System.IO;
+using System.Security.Policy;
 using System.Windows.Forms;
-using static V2Group_TestSub.Figure;
+using static V2Group_TestSub.Polygon;
 
 namespace V2Group_TestSub
 {
@@ -17,34 +18,39 @@ namespace V2Group_TestSub
         public event CurrentPointChangesHandler CurrentPointChanged;
 
         // Figure model
-        Figure figure = new Figure();
+        Polygon polygon = new Polygon();
 
         //Place to store point coordinates, that user wants to check
-        Figure.Point checkingPoint = new Figure.Point();
+        Node checkingPoint = new Node();
 
-        //var saves point id that should be selected after some actions
-        int selectedPoint = 0;
+        int prewXSize;
+        int prewYSize;
 
         public MainForm()
         {
             InitializeComponent();
 
+            prewXSize = Size.Width;
+            prewYSize = Size.Height;
+
             //Update datagrid and chart on changes in figure object
-            figure.FigureChanged += DataGridUpdate;
-            figure.FigureChanged += DrawPanel.Invalidate;
+            polygon.PolygonChanged += DataGridUpdate;
+            polygon.PolygonChanged += DrawPanel.Invalidate;
 
             //Update chart on changes checking point coordinates
             PointChanged += DrawPanel.Invalidate;
             PointChanged += PointInputupdate;
 
             //update chart when selected row changes
-            CurrentPointChanged += DrawPanel.Invalidate;
+            polygon.CurrentNodeChanged += DrawPanel.Invalidate;
         }
 
 
         private void DataGridUpdate()
         {
-            var points = figure.GetPoints();
+            var points = polygon.GetNodes();
+
+            int currentNode = polygon.CurrentNode;
 
             PointsGridView.CancelEdit();
             PointsGridView.Rows.Clear();
@@ -56,9 +62,9 @@ namespace V2Group_TestSub
 
             PointsGridView.ClearSelection();
 
-            if (selectedPoint < PointsGridView.Rows.Count)
+            if (currentNode < PointsGridView.Rows.Count)
             {
-                PointsGridView.Rows[selectedPoint].Selected = true;
+                PointsGridView.Rows[currentNode].Selected = true;
             }
         }
 
@@ -71,7 +77,8 @@ namespace V2Group_TestSub
         private void DrawPanel_Paint(object sender, PaintEventArgs e)
         {
             // Get fresh array of points
-            var points = figure.GetDrawingPoints();
+            var points = polygon.Convert();
+            int currentNode = polygon.CurrentNode;
 
             if (points.Length > 0)
             {
@@ -108,7 +115,7 @@ namespace V2Group_TestSub
                     point.X = point.X - dotSize.Width / 2;
                     point.Y = point.Y - dotSize.Height / 2;
 
-                    if (i == selectedPoint)
+                    if (i == currentNode)
                     {
                         g.FillEllipse(selectedBrush, new Rectangle(point, selectedDotSize));
                     }
@@ -120,7 +127,7 @@ namespace V2Group_TestSub
 
 
                 //Drow checking point
-                bool result = figure.PointInFigureCheck(checkingPoint);
+                bool result = polygon.PointEntryCheck(checkingPoint);
 
                 var p = checkingPoint.Convert();
 
@@ -140,37 +147,6 @@ namespace V2Group_TestSub
             }
         }
 
-        private void AddRowBtn_Click(object sender, EventArgs e)
-        {
-            // Check if there is no row selected
-            if (PointsGridView.CurrentRow != null)
-            {
-                int currentRow = PointsGridView.SelectedCells[0].RowIndex;
-
-                // Check if selected row is the last
-                if (currentRow == PointsGridView.Rows.Count - 1)
-                {
-                    selectedPoint = PointsGridView.Rows.Count;
-
-                    figure.AddPoint(new Figure.Point());
-                }
-                else
-                {
-                    selectedPoint = currentRow + 1;
-
-                    figure.InsertPoint(currentRow, new Figure.Point());
-                }
-
-            }
-            // Adding new Point to the end of list if no row selected
-            else
-            {
-                selectedPoint = PointsGridView.Rows.Count;
-
-                figure.AddPoint(new Figure.Point());
-            }
-        }
-
         private void PointsGridView_CellValueChanged(object sender, DataGridViewCellEventArgs e)
         {
             if (PointsGridView.CurrentRow != null)
@@ -180,48 +156,30 @@ namespace V2Group_TestSub
                 int.TryParse(currentRow.Cells[0].Value.ToString(), out int x);
                 int.TryParse(currentRow.Cells[1].Value.ToString(), out int y);
 
+                polygon.CurrentNode = currentRow.Index;
 
-                figure.UpdatePoint(currentRow.Index, x, y);
+                polygon.UpdateNode(x, y);
             }
         }
 
-        private void RemRowBtn_Click(object sender, EventArgs e)
+        private void RemNodeBtn_Click(object sender, EventArgs e)
         {
-            // Check if there is no row selected
-            if (PointsGridView.CurrentRow != null)
-            {
-                int currentRow = PointsGridView.CurrentRow.Index;
 
-                figure.RemovePoint(currentRow);
-            }
+            polygon.RemoveNode();
+
         }
 
         private void MoveDownBtn_Click(object sender, EventArgs e)
         {
-            if (PointsGridView.CurrentRow != null &&
-                PointsGridView.CurrentRow.Index > 0)
-            {
-                int currentRow = PointsGridView.CurrentRow.Index;
-
-                selectedPoint = currentRow - 1;
-
-                figure.MovePointDown(currentRow);
-            }
+            polygon.MoveNodeDown();
         }
 
         private void MoveUpBtn_Click(object sender, EventArgs e)
         {
-            if (PointsGridView.CurrentRow != null &&
-                PointsGridView.CurrentRow.Index < PointsGridView.Rows.Count - 1)
-            {
-                int currentRow = PointsGridView.CurrentRow.Index;
-
-                selectedPoint = currentRow + 1;
-
-                figure.MovePointUp(currentRow);
-            }
+            polygon.MoveNodeUp();            
         }
 
+        // save and load buttons handlers
         private void SaveBtn_Click(Object sender, EventArgs e)
         {
             ShowSaveDialog();
@@ -239,7 +197,7 @@ namespace V2Group_TestSub
 
                 try
                 {
-                    figure.DeserializeFromJson(text);
+                    polygon.DeserializeFromJson(text);
                 }
                 catch
                 {
@@ -248,13 +206,16 @@ namespace V2Group_TestSub
             }
         }
 
+
+        // Clear button handler
         private void ClearBtn_Click(object sender, EventArgs e)
         {
             ShowSaveDialog();
 
-            figure.ClearPoints();
+            polygon.ClearNodes();
         }
 
+        // Shows saving question dialog
         public void ShowSaveDialog()
         {
             var result = MessageBox.Show(
@@ -265,7 +226,7 @@ namespace V2Group_TestSub
 
             if (result == DialogResult.Yes)
             {
-                string saveString = figure.SerializeToJson();
+                string saveString = polygon.SerializeToJson();
 
                 if (!string.IsNullOrEmpty(saveString))
                 {
@@ -279,36 +240,39 @@ namespace V2Group_TestSub
             }
         }
 
+
         private void PointsGridView_CurrentCellChanged(object sender, EventArgs e)
         {
             if (PointsGridView.SelectedCells.Count > 0)
             {
-                selectedPoint = PointsGridView.SelectedCells[0].RowIndex;
-
-                CurrentPointChanged?.Invoke();
+                polygon.CurrentNode = PointsGridView.SelectedCells[0].RowIndex;
             }
         }
 
+
+        // Presets loading buttons handler
         private void SquarePresertLoadbtn_Click(object sender, EventArgs e)
         {
             ShowSaveDialog();
 
-            figure.LoadSquerePreset();
+            polygon.LoadSquerePreset();
         }
 
         private void TringlePresetLoadBtn_Click(object sender, EventArgs e)
         {
             ShowSaveDialog();
 
-            figure.LoadTringlePreset();
+            polygon.LoadTringlePreset();
         }
 
         private void HourglassPresetLoadBtn_Click(object sender, EventArgs e)
         {
             ShowSaveDialog();
 
-            figure.LoadHourglassPreset();
+            polygon.LoadHourglassPreset();
         }
+
+
 
         private void DrawPanel_MouseClick(object sender, MouseEventArgs e)
         {
@@ -316,66 +280,65 @@ namespace V2Group_TestSub
             {
                 case Keys.Shift:
 
-                    figure.AddPoint(new Figure.Point(e.X, e.Y));
+                    checkingPoint = new Node(e.X, e.Y);
+
+                    PointChanged?.Invoke();
 
                     break;
 
                 case Keys.Control:
 
+                    polygon.UpdateNode(e.X, e.Y);
 
                     break;
 
                 case Keys.None:
 
-                    checkingPoint = new Figure.Point(e.X, e.Y);
+                    polygon.AddNode(new Node(e.X, e.Y));
 
-                    selectedPoint += 1;
-
-                    CurrentPointChanged?.Invoke();
-                    PointChanged?.Invoke();
                     break;
             }
         }
 
         private void KeyPressHandler(object sender, KeyEventArgs e)
         {
+            int currentNode = polygon.CurrentNode;
+
             switch (e.KeyCode)
             {
                 case Keys.Up:
 
-                    if (selectedPoint == 0)
-                    {
-                        selectedPoint = figure.GetCount() - 1;
-                    }
-                    else
-                    {
-                        selectedPoint -= 1;
-                    }
-
-                    CurrentPointChanged?.Invoke();
+                    polygon.NextNode();
 
                     break;
 
                 case Keys.Down:
-                    
-                    if (selectedPoint == figure.GetCount() - 1)
-                    {
-                        selectedPoint = 0;
-                    }
-                    else
-                    {
-                        selectedPoint += 1;
-                    }
-
-                    CurrentPointChanged?.Invoke();
+                   
+                    polygon.PrevNode();
 
                     break;
 
                 case Keys.Delete:
-                    figure.RemovePoint(selectedPoint);
+
+                    polygon.RemoveNode();
+
                     break;
             }
 
+        }
+
+        private void MainForm_SizeChanged(object sender, EventArgs e)
+        {
+            double xScale = (double)Size.Width / prewXSize;
+            double yScale = (double)Size.Height / prewYSize;
+
+            checkingPoint.x = (int)(checkingPoint.x * xScale);
+            checkingPoint.y = (int)(checkingPoint.y * yScale);
+
+            prewXSize = Size.Width;
+            prewYSize = Size.Height;
+
+            polygon.ScalePolygon(xScale, yScale);
         }
     }
 }
